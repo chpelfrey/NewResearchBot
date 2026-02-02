@@ -8,7 +8,14 @@ from langchain_ollama import ChatOllama
 from langgraph.prebuilt import create_react_agent
 
 from research_bot.research_log import append_entry
-from research_bot.tools import check_research_log, search_news, search_web
+from research_bot.tools import (
+    check_research_log,
+    get_weather,
+    search_news,
+    search_reddit,
+    search_web,
+    search_wikipedia,
+)
 
 # Default model - use a model with good tool-calling support (llama3.2, mistral, etc.)
 DEFAULT_MODEL = "llama3.2"
@@ -33,7 +40,10 @@ MANDATORY CITATIONS - You MUST cite every factual sentence. No exceptions:
 When you search:
 - Use search_web with clear, specific queries. For "who is X": first search the exact name, then try 2–3 alternate phrasings if the first search returns nothing useful.
 - For release dates: search exact phrases like "Nintendo Switch 2 release date".
-- For weather, stock prices, or breaking news: use search_news or search_web with recent_only=True.
+- For weather: use get_weather with a place name (e.g. "Reston Virginia", "London UK") for current conditions; use search_news or search_web with recent_only=True for forecasts or news.
+- For Reddit opinions, experiences, or discussions: use search_reddit.
+- For encyclopedic facts, definitions, or overviews: use search_wikipedia.
+- For stock prices or breaking news: use search_news or search_web with recent_only=True.
 - If the first search returns "No results found", run another search with different wording before giving up.
 
 Rule: Do not say you couldn't find someone or something until you have called search_web at least once and tried at least one more query if the first was unhelpful."""
@@ -61,7 +71,14 @@ def create_research_agent(
         base_url=base_url,
     )
     
-    tools = [check_research_log, search_web, search_news]
+    tools = [
+        check_research_log,
+        search_web,
+        search_news,
+        search_reddit,
+        search_wikipedia,
+        get_weather,
+    ]
     
     agent = create_react_agent(
         model=llm,

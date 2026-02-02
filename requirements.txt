@@ -14,5 +14,8 @@ langchain-core>=0.3.0
 # Web search via DuckDuckGo
 ddgs>=6.0.0
 
+# Wikipedia search (public API, no key)
+wikipedia>=1.4.0
+
 # Chat UI (optional)
 streamlit>=1.28.0
