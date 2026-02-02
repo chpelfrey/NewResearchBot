@@ -49,7 +49,13 @@ def main():
         "-s",
         "--stream",
         action="store_true",
-        help="Stream the research process (show agent steps)",
+        help="Stream the research process (show agent steps); uses researcher only, no fact-check pipeline",
+    )
+    parser.add_argument(
+        "-q",
+        "--quick",
+        action="store_true",
+        help="Skip fact-check and formatter (researcher only, faster)",
     )
     parser.add_argument(
         "--base-url",
@@ -60,16 +66,28 @@ def main():
 
     query = " ".join(args.query) if args.query else None
 
+    use_pipeline = not args.stream and not args.quick
+
     if not query:
         # Interactive mode
         print("Researcher AI Bot - Type your query and press Enter. Type 'quit' or 'exit' to stop.\n")
+        if use_pipeline:
+            print("Mode: researcher → fact-check → formatter (full pipeline). Use -q for quick, -s to stream.\n")
         try:
-            from research_bot import ResearchAgent
+            from research_bot import ResearchAgent, ResearchPipeline
 
-            agent = ResearchAgent(
-                model=args.model,
-                temperature=args.temperature,
-                base_url=args.base_url,
+            agent = (
+                ResearchPipeline(
+                    model=args.model,
+                    temperature=args.temperature,
+                    base_url=args.base_url,
+                )
+                if use_pipeline
+                else ResearchAgent(
+                    model=args.model,
+                    temperature=args.temperature,
+                    base_url=args.base_url,
+                )
             )
             while True:
                 try:
@@ -80,7 +98,10 @@ def main():
                     continue
                 if query.lower() in ("quit", "exit", "q"):
                     break
-                print("\nResearching...\n")
+                if use_pipeline:
+                    print("\nResearching, fact-checking, formatting...\n")
+                else:
+                    print("\nResearching...\n")
                 if args.stream:
                     start = time.perf_counter()
                     last_answer = None
@@ -113,12 +134,20 @@ def main():
 
     # Single query mode
     try:
-        from research_bot import ResearchAgent
+        from research_bot import ResearchAgent, ResearchPipeline
 
-        agent = ResearchAgent(
-            model=args.model,
-            temperature=args.temperature,
-            base_url=args.base_url,
+        agent = (
+            ResearchPipeline(
+                model=args.model,
+                temperature=args.temperature,
+                base_url=args.base_url,
+            )
+            if use_pipeline
+            else ResearchAgent(
+                model=args.model,
+                temperature=args.temperature,
+                base_url=args.base_url,
+            )
         )
         if args.stream:
             start = time.perf_counter()
@@ -139,6 +168,8 @@ def main():
                 except OSError:
                     pass
         else:
+            if use_pipeline:
+                print("Researching, fact-checking, formatting...")
             answer = agent.research(query)
             print(make_links_clickable(answer))
     except ImportError as e:

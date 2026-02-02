@@ -26,11 +26,11 @@ st.markdown("""
 
 
 def get_agent():
-    """Create or reuse the research agent (cached in session state)."""
+    """Create or reuse the research pipeline (researcher → fact-checker → formatter, cached in session state)."""
     if "agent" not in st.session_state:
         try:
-            from research_bot import ResearchAgent
-            st.session_state.agent = ResearchAgent(
+            from research_bot import ResearchPipeline
+            st.session_state.agent = ResearchPipeline(
                 model=st.session_state.get("model", os.environ.get("OLLAMA_MODEL", "llama3.2")),
                 temperature=st.session_state.get("temperature", 0.2),
                 base_url=os.environ.get("OLLAMA_BASE_URL"),
@@ -47,7 +47,7 @@ def main():
 
     # Header
     st.title("🔬 Research Bot")
-    st.caption("Ask anything — I'll search the web and cite sources.")
+    st.caption("Ask anything — I search the web, fact-check, and return a cited report.")
 
     # Sidebar (optional settings)
     with st.sidebar:
@@ -83,7 +83,7 @@ def main():
 
         with st.chat_message("assistant"):
             try:
-                with st.spinner("Researching…"):
+                with st.spinner("Researching, fact-checking, and formatting…"):
                     agent = get_agent()
                     answer = agent.research(prompt)
             except Exception as e:
@@ -93,7 +93,7 @@ def main():
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
     if not st.session_state.messages:
-        st.info("Type a question above. I'll search the web and give you an answer with citations.")
+        st.info("Type a question above. I'll search the web, fact-check for bias and reliability, then return a clean cited report.")
 
 
 if __name__ == "__main__":

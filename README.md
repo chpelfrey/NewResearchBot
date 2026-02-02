@@ -6,11 +6,12 @@ An agentic research assistant that uses **DuckDuckGo** for web search and **open
 
 ## Features
 
-- **Agentic workflow**: The AI decides what to search for, runs multiple searches if needed, and synthesizes results
-- **Research log**: Every question and answer is logged to a JSON file with timestamp and response time; the bot checks this log for relevant past answers before searching the web
+- **Three-stage pipeline** (default): Researcher → Fact-checker → Formatter. The researcher finds info with sentence-level citations; the fact-checker flags uncorroborated or biased content; the formatter produces a clean, fully-cited report.
+- **Agentic workflow**: The researcher decides what to search for, runs multiple searches if needed, and synthesizes results with mandatory citations
+- **Research log**: Every question and answer is logged to a JSON file; the bot checks this log for relevant past answers before searching the web
 - **DuckDuckGo search**: No API keys required; uses the `duckduckgo-search` library
 - **Local/remote LLMs**: Runs via Ollama (llama3.2, mistral, etc.)—fully local or remote
-- **Streaming mode**: Watch the agent's tool calls and reasoning in real time
+- **Streaming mode** (`-s`): Watch the researcher's tool calls in real time (researcher only, no fact-check pipeline)
 
 ## Prerequisites
 
@@ -48,19 +49,26 @@ Then open the URL in your browser (usually http://localhost:8501). Type a resear
 
 ### CLI
 
-**Single query:**
+By default the CLI runs the **full pipeline** (researcher → fact-checker → formatter). Use `-q` for researcher-only (faster) or `-s` to stream researcher steps.
+
+**Single query (full pipeline):**
 ```bash
 python cli.py "What are the latest developments in quantum computing?"
+```
+
+**Quick mode** (researcher only, no fact-check):
+```bash
+python cli.py -q "Current Bitcoin price"
+```
+
+**Stream the research process** (see researcher tool calls; no fact-check):
+```bash
+python cli.py -s "Current Bitcoin price"
 ```
 
 **Interactive mode** (no query = enter prompts one by one):
 ```bash
 python cli.py
-```
-
-**Stream the research process** (see agent steps and tool calls):
-```bash
-python cli.py -s "Current Bitcoin price"
 ```
 
 **Custom model:**
@@ -77,6 +85,16 @@ python cli.py --base-url http://remote:11434 "Research topic"
 
 ### As a Python module
 
+**Full pipeline** (researcher → fact-checker → formatter; recommended):
+```python
+from research_bot import ResearchPipeline
+
+pipeline = ResearchPipeline(model="llama3.2", temperature=0.2)
+report = pipeline.research("What is the capital of France?")
+print(report)
+```
+
+**Researcher only** (faster; no fact-check):
 ```python
 from research_bot import ResearchAgent
 
@@ -84,7 +102,7 @@ agent = ResearchAgent(model="llama3.2", temperature=0.2)
 answer = agent.research("What is the capital of France?")
 print(answer)
 
-# Or stream the process
+# Or stream the researcher steps
 for chunk in agent.stream("Latest AI news"):
     for msg in chunk.get("messages", []):
         if msg.content:
