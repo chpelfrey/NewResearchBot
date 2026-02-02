@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-bot"
+version = "0.1.0"
+description = "Researcher AI Bot - Agentic web research using DuckDuckGo and open-source LLMs"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Researcher Bot" }]
+keywords = ["ai", "research", "agent", "ollama", "duckduckgo", "langgraph"]
+dependencies = [
+    "langchain-ollama>=0.2.0",
+    "langgraph>=0.2.0",
+    "langgraph-prebuilt>=0.6.0",
+    "langchain-core>=0.3.0",
+    "duckduckgo-search>=6.0.0",
+]
+
+[project.scripts]
+research-bot = "cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+include = ["research_bot*"]

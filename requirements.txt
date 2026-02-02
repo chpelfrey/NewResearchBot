@@ -1,0 +1,15 @@
+# Researcher AI Bot - Open Source Dependencies
+# Python 3.9+ supported (3.10+ recommended for latest LangGraph)
+
+# LLM - Local models via Ollama
+langchain-ollama>=0.2.0
+
+# Agent framework
+langgraph>=0.2.0
+langgraph-prebuilt>=0.6.0
+
+# Core LangChain (messages, tools)
+langchain-core>=0.3.0
+
+# Web search via DuckDuckGo
+duckduckgo-search>=6.0.0
