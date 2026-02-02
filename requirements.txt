@@ -12,4 +12,4 @@ langgraph-prebuilt>=0.6.0
 langchain-core>=0.3.0
 
 # Web search via DuckDuckGo
-duckduckgo-search>=6.0.0
+ddgs>=6.0.0
