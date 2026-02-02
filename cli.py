@@ -4,6 +4,7 @@
 import argparse
 import os
 import sys
+import time
 
 # Allow running without pip install: add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -68,14 +69,24 @@ def main():
                     break
                 print("\nResearching...\n")
                 if args.stream:
+                    start = time.perf_counter()
+                    last_answer = None
                     for chunk in agent.stream(query):
                         for msg in chunk.get("messages", []):
                             if hasattr(msg, "content") and msg.content:
                                 if hasattr(msg, "tool_calls") and msg.tool_calls:
                                     print(f"[Tool calls: {[tc.get('name') for tc in msg.tool_calls]}]\n")
                                 else:
+                                    last_answer = msg.content
                                     print(msg.content)
                                     print()
+                    elapsed = time.perf_counter() - start
+                    if last_answer:
+                        try:
+                            from research_bot.research_log import append_entry
+                            append_entry(query=query, response=last_answer, response_time_seconds=elapsed)
+                        except OSError:
+                            pass
                 else:
                     answer = agent.research(query)
                     print("Answer:\n")
@@ -97,13 +108,23 @@ def main():
             base_url=args.base_url,
         )
         if args.stream:
+            start = time.perf_counter()
+            last_answer = None
             for chunk in agent.stream(query):
                 for msg in chunk.get("messages", []):
                     if hasattr(msg, "content") and msg.content:
                         if hasattr(msg, "tool_calls") and msg.tool_calls:
                             print(f"[Tool: {[tc.get('name') for tc in msg.tool_calls]}]\n")
                         else:
+                            last_answer = msg.content
                             print(msg.content)
+            elapsed = time.perf_counter() - start
+            if last_answer:
+                try:
+                    from research_bot.research_log import append_entry
+                    append_entry(query=query, response=last_answer, response_time_seconds=elapsed)
+                except OSError:
+                    pass
         else:
             answer = agent.research(query)
             print(answer)

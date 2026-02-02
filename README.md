@@ -7,6 +7,7 @@ An agentic research assistant that uses **DuckDuckGo** for web search and **open
 ## Features
 
 - **Agentic workflow**: The AI decides what to search for, runs multiple searches if needed, and synthesizes results
+- **Research log**: Every question and answer is logged to a JSON file with timestamp and response time; the bot checks this log for relevant past answers before searching the web
 - **DuckDuckGo search**: No API keys required; uses the `duckduckgo-search` library
 - **Local/remote LLMs**: Runs via Ollama (llama3.2, mistral, etc.)—fully local or remote
 - **Streaming mode**: Watch the agent's tool calls and reasoning in real time
@@ -99,8 +100,22 @@ NewResearchBot/
 └── research_bot/
     ├── __init__.py
     ├── agent.py        # LangGraph ReAct agent + Ollama
-    └── tools.py        # DuckDuckGo search tool
+    ├── research_log.py # JSON log of Q&As + relevance lookup
+    └── tools.py        # check_research_log, DuckDuckGo search
 ```
+
+## Research log
+
+Each question and answer is appended to a JSON log file (default: `research_log.json` in the current working directory). Each entry includes:
+
+- `query` – the question asked  
+- `response` – the bot’s answer  
+- `timestamp` – when the query was run (UTC ISO)  
+- `response_time_seconds` – time taken to produce the answer  
+
+The agent **checks this log first** for relevant past Q&As (by similarity to the current question). It only calls web/news search when the log has no good match or when it needs to fill gaps or get newer data.
+
+To use a different log path, set `RESEARCH_LOG_PATH` to an absolute or relative path.
 
 ## Environment Variables
 
@@ -108,6 +123,7 @@ NewResearchBot/
 |----------|-------------|
 | `OLLAMA_MODEL` | Default model name (default: llama3.2) |
 | `OLLAMA_BASE_URL` | Ollama API URL (default: http://localhost:11434) |
+| `RESEARCH_LOG_PATH` | Path to the research Q&A log file (default: research_log.json) |
 
 ## Models
 

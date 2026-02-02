@@ -1,28 +1,34 @@
 """Researcher agent - LangGraph + Ollama with DuckDuckGo search."""
 
+import time
+
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_ollama import ChatOllama
 from langgraph.prebuilt import create_react_agent
 
-from research_bot.tools import search_news, search_web
+from research_bot.research_log import append_entry
+from research_bot.tools import check_research_log, search_news, search_web
 
 # Default model - use a model with good tool-calling support (llama3.2, mistral, etc.)
 DEFAULT_MODEL = "llama3.2"
 
 RESEARCHER_SYSTEM_PROMPT = """You are a research assistant that finds accurate, up-to-date information from the internet.
 
-CRITICAL: You MUST call search_web (and/or search_news for current events) BEFORE answering. Never answer from memory alone. Every answer must be based on actual search results.
+CRITICAL - Check the research log FIRST, then search only if needed:
+1. ALWAYS call check_research_log with the user's question first. Use the same or similar phrasing as the user.
+2. If the log returns relevant past answers, you may use them. Only call search_web and/or search_news to fill in gaps, get newer data, or when the log has no relevant answers.
+3. For weather, news, prices, or current events: prefer search_news and search_web to get fresh results even if the log had something similar.
+4. Synthesize log results and/or search results into a clear answer with specific details.
+5. Include key facts (temperatures, numbers, dates) when available.
 
-When a user asks a question:
-1. Immediately use search_web with effective queries (e.g., "Reston VA weather today", "weather Reston Virginia")
-2. For weather, news, prices, or current events: also try search_news with similar queries
-3. Run multiple searches if needed - try different phrasings to get useful results
-4. Synthesize the search results into a clear answer with specific details from the results
-5. Include key facts (temperatures, numbers, dates) when the search returns them
+When you do search:
+- Use search_web with effective queries (e.g., "Reston VA weather today", "weather Reston Virginia").
+- For weather, news, prices, or current events: also try search_news with similar queries.
+- Run multiple searches if needed; try different phrasings.
 
 Be thorough. If search results lack specific details, say what you found and note any gaps.
-If you cannot find relevant information after searching, say so clearly."""
+If you cannot find relevant information after checking the log and searching, say so clearly."""
 
 
 def create_research_agent(
@@ -47,7 +53,7 @@ def create_research_agent(
         base_url=base_url,
     )
     
-    tools = [search_web, search_news]
+    tools = [check_research_log, search_web, search_news]
     
     agent = create_react_agent(
         model=llm,
@@ -70,16 +76,26 @@ class ResearchAgent:
         self.graph = create_research_agent(model=model, temperature=temperature, base_url=base_url)
     
     def research(self, query: str, config: RunnableConfig | None = None) -> str:
-        """Run a research query and return the final answer."""
+        """Run a research query and return the final answer. Logs Q&A and response time to the research log."""
+        start = time.perf_counter()
         result = self.graph.invoke(
             {"messages": [HumanMessage(content=query)]},
             config=config or {},
         )
+        elapsed = time.perf_counter() - start
         messages = result.get("messages", [])
+        answer = None
         for msg in reversed(messages):
             if isinstance(msg, AIMessage) and msg.content:
-                return msg.content
-        return "I couldn't generate a response. Please try again."
+                answer = msg.content
+                break
+        if answer is None:
+            answer = "I couldn't generate a response. Please try again."
+        try:
+            append_entry(query=query, response=answer, response_time_seconds=elapsed)
+        except OSError:
+            pass  # Don't fail the request if logging fails
+        return answer
     
     def stream(self, query: str, config: RunnableConfig | None = None):
         """Stream the research process (agent steps and final answer)."""

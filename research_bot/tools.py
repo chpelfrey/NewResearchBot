@@ -2,6 +2,8 @@
 
 from langchain_core.tools import tool
 
+from research_bot.research_log import get_relevant_entries
+
 try:
     from ddgs import DDGS
 except ImportError:
@@ -89,3 +91,39 @@ def search_news(
         return _format_news_results(results, query)
     except Exception as e:
         return f"News search failed: {str(e)}"
+
+
+@tool
+def check_research_log(
+    query: str,
+    max_entries: int = 5,
+) -> str:
+    """Check the research log for past questions and answers that may be relevant.
+    ALWAYS call this first before searching the web. If you find a relevant past answer,
+    you may use it and only call search_web/search_news to fill in gaps or get newer info.
+
+    Args:
+        query: The user's question (use the same or similar phrasing).
+        max_entries: Maximum number of past Q&A entries to return (default 5).
+
+    Returns:
+        Formatted past Q&A entries with query, response, timestamp, and response time; or
+        a message saying no relevant past answers were found.
+    """
+    entries = get_relevant_entries(query, min_score=0.4, max_entries=max_entries)
+    if not entries:
+        return "No relevant past questions or answers found in the research log."
+    parts = []
+    for i, e in enumerate(entries, 1):
+        q = e.get("query", "")
+        r = e.get("response", "")
+        ts = e.get("timestamp", "")
+        sec = e.get("response_time_seconds", "")
+        score = e.get("relevance_score", "")
+        parts.append(
+            f"[{i}] Past query: {q}\n"
+            f"    Response: {r}\n"
+            f"    When: {ts} (took {sec}s)\n"
+            f"    Relevance: {score}"
+        )
+    return "\n\n".join(parts)
