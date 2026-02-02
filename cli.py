@@ -3,11 +3,24 @@
 
 import argparse
 import os
+import re
 import sys
 import time
 
 # Allow running without pip install: add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# OSC 8: make markdown links [text](url) clickable in supported terminals (iTerm2, etc.)
+_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
+
+
+def make_links_clickable(text: str) -> str:
+    """Convert markdown links [text](url) to OSC 8 terminal hyperlinks."""
+    def _replace(m):
+        label, url = m.group(1), m.group(2)
+        # OSC 8: \033]8;;url\033\\label\033]8;;\033\\
+        return f"\033]8;;{url}\033\\[{label}]\033]8;;\033\\"
+    return _LINK_PATTERN.sub(_replace, text)
 
 
 def main():
@@ -78,7 +91,7 @@ def main():
                                     print(f"[Tool calls: {[tc.get('name') for tc in msg.tool_calls]}]\n")
                                 else:
                                     last_answer = msg.content
-                                    print(msg.content)
+                                    print(make_links_clickable(msg.content))
                                     print()
                     elapsed = time.perf_counter() - start
                     if last_answer:
@@ -90,7 +103,7 @@ def main():
                 else:
                     answer = agent.research(query)
                     print("Answer:\n")
-                    print(answer)
+                    print(make_links_clickable(answer))
                 print("-" * 50)
         except ImportError as e:
             print("Error: Could not import research_bot. Install dependencies:", file=sys.stderr)
@@ -117,7 +130,7 @@ def main():
                             print(f"[Tool: {[tc.get('name') for tc in msg.tool_calls]}]\n")
                         else:
                             last_answer = msg.content
-                            print(msg.content)
+                            print(make_links_clickable(msg.content))
             elapsed = time.perf_counter() - start
             if last_answer:
                 try:
@@ -127,7 +140,7 @@ def main():
                     pass
         else:
             answer = agent.research(query)
-            print(answer)
+            print(make_links_clickable(answer))
     except ImportError as e:
         print("Error: Could not import research_bot. Install dependencies:", file=sys.stderr)
         print("  pip install -r requirements.txt", file=sys.stderr)
