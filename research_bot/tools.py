@@ -44,10 +44,10 @@ def search_web(
     recent_only: bool = False,
 ) -> str:
     """Search the internet using DuckDuckGo. Use for facts, definitions, people, release dates, and general information.
-    Always use this tool - never answer from memory. Craft specific queries (e.g. "Nintendo Switch 2 release date", "Alex Pettyfer actor").
+    Always use this tool - never answer from memory. Craft specific queries (e.g. "Nintendo Switch 2 release date", "Alex Pretti nurse Minneapolis 2026").
     
     Args:
-        query: The search query - be specific. Try alternate spellings or phrasings if the first search fails (e.g. "Alex Pretti" -> "Alex Pettyfer").
+        query: The search query - be specific. For "who is X" use the exact name first, then try adding context (e.g. "Alex Pretti nurse", "Alex Pretti Minneapolis") or alternate spellings if the first search returns no useful results.
         max_results: Number of results (default 10, max 20)
         recent_only: If True, restrict to last day (use for weather, prices, today's news). Default False for broad results.
     
@@ -60,7 +60,8 @@ def search_web(
         kwargs = {"max_results": max_results}
         if recent_only:
             kwargs["timelimit"] = "d"
-        results = ddgs.text(query, **kwargs)
+        raw = ddgs.text(query, **kwargs)
+        results = list(raw) if raw is not None else []
         return _format_text_results(results, query)
     except Exception as e:
         return f"Search failed: {str(e)}"
@@ -84,11 +85,12 @@ def search_news(
     max_results = min(max(max_results, 1), 20)
     try:
         ddgs = DDGS()
-        results = ddgs.news(
+        raw = ddgs.news(
             query,
             max_results=max_results,
             timelimit="d",  # Last 24 hours
         )
+        results = list(raw) if raw is not None else []
         return _format_news_results(results, query)
     except Exception as e:
         return f"News search failed: {str(e)}"
