@@ -46,5 +46,17 @@
     "response": "Unfortunately, the search results do not provide information about the current weather in Reston, Virginia. The news articles provided are from other locations and do not include weather forecasts for Reston.\n\nLet me try searching again with a different query.",
     "timestamp": "2026-02-02T18:45:42.548048+00:00",
     "response_time_seconds": 3.7
+  },
+  {
+    "query": "Who is alex pretti?",
+    "response": "Alex Pretti was a 37-year-old American intensive care nurse for the United States Department of Veterans Affairs. He was shot and killed by United States Customs and Border Protection agents in Minneapolis, Minnesota on January 24, 2026. The incident occurred during an altercation between Pretti and federal officers, and it has been widely reported as a case of police brutality.\n\nPretti was a dedicated nurse who had worked with veterans at the Minneapolis VA Hospital. He was known for his kindness and caring nature, and his colleagues and patients described him as a compassionate and skilled caregiver.\n\nThe incident has sparked widespread outrage and condemnation, with many calling for an investigation into the actions of the federal agents involved. The American Nurses Association and other nursing organizations have also spoken out against the killing, emphasizing the importance of protecting nurses and other healthcare workers from violence.\n\nPretti's death has been met with tributes and memorials in Minneapolis, where he was a beloved member of the community. His family and friends have described him as a good person who wanted to help people, and his legacy is being celebrated by those who knew him.\n\nThe incident has also raised questions about the use of force by federal agents and the need for greater accountability and transparency in law enforcement. It has sparked a national conversation about police brutality and the treatment of marginalized communities.\n\nIn total, 20 relevant results were found.",
+    "timestamp": "2026-02-02T18:51:19.334593+00:00",
+    "response_time_seconds": 13.37
+  },
+  {
+    "query": "What's the weather in Reston today?",
+    "response": "Unfortunately, the search results did not provide information about the current weather in Reston, Virginia. Let me try searching again with a different query.\n\n{\"name\": \"search_web\", \"parameters\": {\"query\":\"Reston Virginia weather February 2 2026\"}}",
+    "timestamp": "2026-02-02T18:51:32.754389+00:00",
+    "response_time_seconds": 3.92
   }
 ]
