@@ -41,13 +41,15 @@ def _format_news_results(results: list, query: str) -> str:
 def search_web(
     query: str,
     max_results: int = 10,
+    recent_only: bool = False,
 ) -> str:
-    """Search the internet using DuckDuckGo. Use for facts, definitions, weather, and general information.
-    Always use this tool - never answer from memory. Craft specific queries like "Reston VA weather today".
+    """Search the internet using DuckDuckGo. Use for facts, definitions, people, release dates, and general information.
+    Always use this tool - never answer from memory. Craft specific queries (e.g. "Nintendo Switch 2 release date", "Alex Pettyfer actor").
     
     Args:
-        query: The search query - be specific (e.g., "weather Reston Virginia", "Bitcoin price today")
+        query: The search query - be specific. Try alternate spellings or phrasings if the first search fails (e.g. "Alex Pretti" -> "Alex Pettyfer").
         max_results: Number of results (default 10, max 20)
+        recent_only: If True, restrict to last day (use for weather, prices, today's news). Default False for broad results.
     
     Returns:
         Search results with titles, URLs, and snippets
@@ -55,11 +57,10 @@ def search_web(
     max_results = min(max(max_results, 1), 20)
     try:
         ddgs = DDGS()
-        results = ddgs.text(
-            query,
-            max_results=max_results,
-            timelimit="d",  # Prefer recent results for current info
-        )
+        kwargs = {"max_results": max_results}
+        if recent_only:
+            kwargs["timelimit"] = "d"
+        results = ddgs.text(query, **kwargs)
         return _format_text_results(results, query)
     except Exception as e:
         return f"Search failed: {str(e)}"
