@@ -35,6 +35,17 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Chat UI (recommended)
+
+Run the web chatbot for a simple, user-friendly interface:
+
+```bash
+pip install -r requirements.txt   # includes streamlit
+streamlit run app.py
+```
+
+Then open the URL in your browser (usually http://localhost:8501). Type a research question, and the bot will search the web and reply with citations. Use the **Settings** sidebar to change the Ollama model or temperature.
+
 ### CLI
 
 **Single query:**
@@ -93,6 +104,7 @@ print(results)
 
 ```
 NewResearchBot/
+├── app.py              # Streamlit chat UI
 ├── cli.py              # CLI entry point
 ├── requirements.txt    # Dependencies
 ├── pyproject.toml      # Package config + script entry
