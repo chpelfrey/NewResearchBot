@@ -11,7 +11,7 @@ except ImportError:
 
 
 def _format_text_results(results: list, query: str) -> str:
-    """Format text search results."""
+    """Format text search results with citation-ready URLs."""
     if not results:
         return f"No results found for: {query}"
     output_parts = []
@@ -19,12 +19,15 @@ def _format_text_results(results: list, query: str) -> str:
         title = r.get("title", "No title")
         href = r.get("href", r.get("url", ""))
         body = r.get("body", r.get("description", ""))
-        output_parts.append(f"[{i}] {title}\n    URL: {href}\n    {body}")
+        cite = f"[{i}]({href})" if href else ""
+        output_parts.append(
+            f"[{i}] {title}\n    URL: {href}\n    Cite as: {cite}\n    {body}"
+        )
     return "\n\n".join(output_parts)
 
 
 def _format_news_results(results: list, query: str) -> str:
-    """Format news search results."""
+    """Format news search results with citation-ready URLs."""
     if not results:
         return f"No news found for: {query}"
     output_parts = []
@@ -33,7 +36,10 @@ def _format_news_results(results: list, query: str) -> str:
         url = r.get("url", r.get("href", ""))
         body = r.get("body", r.get("description", ""))
         date = r.get("date", "")
-        output_parts.append(f"[{i}] {title}\n    URL: {url}\n    Date: {date}\n    {body}")
+        cite = f"[{i}]({url})" if url else ""
+        output_parts.append(
+            f"[{i}] {title}\n    URL: {url}\n    Cite as: {cite}\n    Date: {date}\n    {body}"
+        )
     return "\n\n".join(output_parts)
 
 
