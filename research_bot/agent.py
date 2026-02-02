@@ -10,11 +10,30 @@ from langgraph.prebuilt import create_react_agent
 from research_bot.research_log import append_entry
 from research_bot.tools import (
     check_research_log,
+    get_openweather,
     get_weather,
+    query_wikidata,
+    search_arxiv,
+    search_crossref,
+    search_datagov,
+    search_fred,
+    search_github,
+    search_hacker_news,
+    search_internet_archive,
     search_news,
+    search_newsapi,
+    search_npm,
+    search_openlibrary,
+    search_pubmed,
+    search_pypi,
     search_reddit,
+    search_semantic_scholar,
+    search_stackexchange,
     search_web,
     search_wikipedia,
+    search_wikiquote,
+    search_world_bank,
+    search_youtube,
 )
 
 # Default model - use a model with good tool-calling support (llama3.2, mistral, etc.)
@@ -40,10 +59,18 @@ MANDATORY CITATIONS - You MUST cite every factual sentence. No exceptions:
 When you search:
 - Use search_web with clear, specific queries. For "who is X": first search the exact name, then try 2–3 alternate phrasings if the first search returns nothing useful.
 - For release dates: search exact phrases like "Nintendo Switch 2 release date".
-- For weather: use get_weather with a place name (e.g. "Reston Virginia", "London UK") for current conditions; use search_news or search_web with recent_only=True for forecasts or news.
+- For weather: use get_weather (Open-Meteo) or get_openweather (needs OPENWEATHER_API_KEY) with a place name.
 - For Reddit opinions, experiences, or discussions: use search_reddit.
 - For encyclopedic facts, definitions, or overviews: use search_wikipedia.
 - For stock prices or breaking news: use search_news or search_web with recent_only=True.
+- Academic papers: use search_arxiv (preprints), search_pubmed (biomedical), search_semantic_scholar (AI/CS), search_crossref (DOIs/scholarly metadata).
+- Economic data: use search_world_bank (development indicators), search_fred (US economic series; needs FRED_API_KEY).
+- US government datasets: use search_datagov.
+- News from many sources: use search_newsapi (needs NEWSAPI_KEY) or search_news (DuckDuckGo).
+- Historical web/archives: use search_internet_archive.
+- Code/repos: use search_github. Programming Q&A: use search_stackexchange. Package info: search_pypi (Python), search_npm (JavaScript).
+- Structured knowledge: query_wikidata. Books: search_openlibrary. Quotes: search_wikiquote.
+- Tech news/discussions: search_hacker_news. Video metadata: search_youtube (needs YOUTUBE_API_KEY).
 - If the first search returns "No results found", run another search with different wording before giving up.
 
 Rule: Do not say you couldn't find someone or something until you have called search_web at least once and tried at least one more query if the first was unhelpful."""
@@ -78,6 +105,31 @@ def create_research_agent(
         search_reddit,
         search_wikipedia,
         get_weather,
+        # Academic & Scientific
+        search_arxiv,
+        search_pubmed,
+        search_semantic_scholar,
+        search_crossref,
+        # Data & Statistics
+        search_world_bank,
+        search_fred,
+        get_openweather,
+        search_datagov,
+        # News & Media
+        search_newsapi,
+        search_internet_archive,
+        # Code & Technical
+        search_github,
+        search_stackexchange,
+        search_pypi,
+        search_npm,
+        # General Knowledge
+        query_wikidata,
+        search_openlibrary,
+        search_wikiquote,
+        # Social / Trends
+        search_hacker_news,
+        search_youtube,
     ]
     
     agent = create_react_agent(

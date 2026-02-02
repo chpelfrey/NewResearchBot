@@ -131,7 +131,7 @@ NewResearchBot/
     ├── __init__.py
     ├── agent.py        # LangGraph ReAct agent + Ollama
     ├── research_log.py # JSON log of Q&As + relevance lookup
-    └── tools.py        # check_research_log, DuckDuckGo search
+    └── tools.py        # Search tools: web, news, arXiv, PubMed, GitHub, Wikidata, etc.
 ```
 
 ## Research log
@@ -147,6 +147,19 @@ The agent **checks this log first** for relevant past Q&As (by similarity to the
 
 To use a different log path, set `RESEARCH_LOG_PATH` to an absolute or relative path.
 
+## Research Tools
+
+The researcher agent can use many tools (no API keys unless noted):
+
+- **Web & general**: DuckDuckGo (search_web, search_news), Reddit, Wikipedia, research log
+- **Weather**: Open-Meteo (get_weather), OpenWeather (get_openweather; needs key)
+- **Academic**: arXiv, PubMed/PMC, Semantic Scholar, CrossRef
+- **Data & stats**: World Bank, FRED (needs key), data.gov, OpenWeather (needs key)
+- **News & media**: NewsAPI (needs key), Internet Archive
+- **Code**: GitHub, Stack Exchange, PyPI, npm
+- **Knowledge**: Wikidata, Open Library, Wikiquote
+- **Social/trends**: Hacker News (Algolia), YouTube Data (needs key)
+
 ## Environment Variables
 
 | Variable | Description |
@@ -154,6 +167,11 @@ To use a different log path, set `RESEARCH_LOG_PATH` to an absolute or relative 
 | `OLLAMA_MODEL` | Default model name (default: llama3.2) |
 | `OLLAMA_BASE_URL` | Ollama API URL (default: http://localhost:11434) |
 | `RESEARCH_LOG_PATH` | Path to the research Q&A log file (default: research_log.json) |
+| `FRED_API_KEY` | Federal Reserve Economic Data (optional; for search_fred) |
+| `OPENWEATHER_API_KEY` | OpenWeather API (optional; for get_openweather) |
+| `NEWSAPI_KEY` | NewsAPI (optional; for search_newsapi) |
+| `YOUTUBE_API_KEY` | YouTube Data API (optional; for search_youtube) |
+| `GITHUB_TOKEN` | GitHub token (optional; higher rate limit for search_github) |
 
 ## Models
 
