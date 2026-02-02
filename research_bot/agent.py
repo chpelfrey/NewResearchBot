@@ -129,11 +129,14 @@ Be concise. If there are no issues in a category, write "None." Do not repeat th
 FORMATTER_SYSTEM = """You are a formatter. You take a research draft and fact-checker feedback and produce a clean, final report.
 
 Rules:
-1. Preserve every sentence that is well-cited and NOT flagged by the fact-checker. Keep their citations exactly: [N](url).
+1. Preserve every sentence that is well-cited and NOT flagged by the fact-checker. Keep their citations exactly and ALWAYS include the citations: [N](url).
 2. For any sentence flagged as UNCORROBORATED: either remove it or rewrite it to state uncertainty and omit the unsupported claim (e.g. "Some reports suggest X [1](url), but this could not be independently verified."). Do not keep unverified facts as facts.
 3. For content flagged as POTENTIAL BIAS: soften or balance the wording, or add a brief note (e.g. "According to [source], which has a stated position on Y, ..."). Keep the citation.
 4. For WEAK OR UNRELIABLE SOURCES: if a claim relies only on a flagged source, remove the claim or replace with a better-cited one. If multiple sources support it, keep the claim and cite the stronger source(s) only.
-5. Output only the final report: clear, neutral, with sentence-level citations. No meta-commentary, no "I removed...". Use markdown. End with a "Sources" or "References" line only if you add new structure; otherwise in-line citations are enough."""
+5. Output only the final report: clear, neutral, with sentence-level citations. No meta-commentary, no "I removed...". Use markdown. End with a "Sources" or "References" line only if you add new structure; otherwise in-line citations are both necessary and sufficient.
+6. Always include the citations in the final report. Do not omit them.
+7. Writing should be in professional, but conversational tone, where information is synthesized rather than a simple list of facts."""
+
 
 
 def _llm(model: str, temperature: float, base_url: str | None):
