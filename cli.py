@@ -58,6 +58,12 @@ def main():
         help="Skip fact-check and formatter (researcher only, faster)",
     )
     parser.add_argument(
+        "-c",
+        "--show-clarification",
+        action="store_true",
+        help="Show clarifier output (scope + research plan) before the report (full pipeline only)",
+    )
+    parser.add_argument(
         "--base-url",
         default=os.environ.get("OLLAMA_BASE_URL"),
         help="Ollama API base URL (for remote Ollama)",
@@ -72,7 +78,7 @@ def main():
         # Interactive mode
         print("Researcher AI Bot - Type your query and press Enter. Type 'quit' or 'exit' to stop.\n")
         if use_pipeline:
-            print("Mode: researcher → fact-check → formatter (full pipeline). Use -q for quick, -s to stream.\n")
+            print("Mode: clarifier → researcher → fact-check → formatter (full pipeline). Use -q for quick, -s to stream, -c to show clarification.\n")
         try:
             from research_bot import ResearchAgent, ResearchPipeline
 
@@ -99,7 +105,7 @@ def main():
                 if query.lower() in ("quit", "exit", "q"):
                     break
                 if use_pipeline:
-                    print("\nResearching, fact-checking, formatting...\n")
+                    print("\nClarifying, researching, fact-checking, formatting...\n")
                 else:
                     print("\nResearching...\n")
                 if args.stream:
@@ -122,7 +128,15 @@ def main():
                         except OSError:
                             pass
                 else:
-                    answer = agent.research(query)
+                    clarification_list = [] if (use_pipeline and args.show_clarification) else None
+                    answer = agent.research(
+                        query,
+                        clarification_out=clarification_list,
+                    )
+                    if clarification_list and clarification_list[0].strip():
+                        print("Clarification (scope + plan):\n")
+                        print(clarification_list[0])
+                        print()
                     print("Answer:\n")
                     print(make_links_clickable(answer))
                 print("-" * 50)
@@ -169,8 +183,13 @@ def main():
                     pass
         else:
             if use_pipeline:
-                print("Researching, fact-checking, formatting...")
-            answer = agent.research(query)
+                print("Clarifying, researching, fact-checking, formatting...")
+            clarification_list = [] if (use_pipeline and args.show_clarification) else None
+            answer = agent.research(query, clarification_out=clarification_list)
+            if clarification_list and clarification_list[0].strip():
+                print("\nClarification (scope + plan):\n")
+                print(clarification_list[0])
+                print()
             print(make_links_clickable(answer))
     except ImportError as e:
         print("Error: Could not import research_bot. Install dependencies:", file=sys.stderr)

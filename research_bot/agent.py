@@ -72,6 +72,40 @@ def create_research_agent(
     return agent
 
 
+# --- Clarifier (no tools, single LLM call) ---
+
+CLARIFIER_SYSTEM = """You are a clarifier. Your job is to take the user's research question and:
+
+1. Confirm in one or two sentences what you understand they want to research (the main topic and any specific aspects).
+2. Propose a short, ordered research plan so a researcher can fully answer the question. Break the question into clear steps or sub-questions if it has multiple parts (e.g. "compare X and Y" → step 1: research X, step 2: research Y, step 3: compare). For a single simple question, the plan can be one or two steps.
+
+Output exactly this structure in markdown:
+
+## What I'm researching
+(Your 1–2 sentence confirmation of the question.)
+
+## Suggested research plan
+1. (First step or sub-question.)
+2. (Second step, if needed.)
+...
+(Add steps as needed; keep the list concise.)
+
+Do not answer the question yourself—only clarify and plan. Be concise."""
+
+
+def clarify(
+    query: str,
+    model: str = DEFAULT_MODEL,
+    temperature: float = 0.2,
+    base_url: str | None = None,
+) -> str:
+    """Run the clarifier on the user query. Returns confirmation + suggested research plan."""
+    llm = _llm(model, temperature, base_url)
+    prompt = f"""User's research question:\n\n{query}\n\nClarify what you're researching and give a suggested research plan (What I'm researching + Suggested research plan)."""
+    msg = llm.invoke([SystemMessage(content=CLARIFIER_SYSTEM), HumanMessage(content=prompt)])
+    return msg.content if hasattr(msg, "content") and msg.content else ""
+
+
 # --- Fact-checker and formatter (no tools, single LLM calls) ---
 
 FACT_CHECKER_SYSTEM = """You are a fact-checker. You review research drafts and flag problems.
@@ -202,7 +236,7 @@ class ResearchAgent:
 
 
 class ResearchPipeline:
-    """Three-stage pipeline: researcher → fact-checker → formatter. Use this for cited, fact-checked reports."""
+    """Four-stage pipeline: clarifier → researcher → fact-checker → formatter. Use this for cited, fact-checked reports."""
 
     def __init__(
         self,
@@ -215,11 +249,35 @@ class ResearchPipeline:
         self.base_url = base_url
         self._researcher = ResearchAgent(model=model, temperature=temperature, base_url=base_url)
 
-    def research(self, query: str, config: RunnableConfig | None = None) -> str:
-        """Run researcher → fact-checker → formatter and return the final report. Logs to research log."""
+    def research(
+        self,
+        query: str,
+        config: RunnableConfig | None = None,
+        *,
+        clarification_out: list[str] | None = None,
+    ) -> str:
+        """Run clarifier → researcher → fact-checker → formatter and return the final report. Logs to research log.
+
+        If clarification_out is provided (e.g. a list), the clarifier's output is appended so the caller can display it.
+        """
         start = time.perf_counter()
+        # Stage 0: clarifier confirms scope and suggests research plan
+        clarification = clarify(
+            query=query,
+            model=self.model,
+            temperature=self.temperature,
+            base_url=self.base_url,
+        )
+        if clarification_out is not None:
+            clarification_out.append(clarification)
+        enhanced_query = (
+            f"Original question: {query}\n\n{clarification}\n\n"
+            "Follow the suggested research plan above and answer the original question fully with cited sources."
+        )
+        if not clarification.strip():
+            enhanced_query = query  # fallback if clarifier returns nothing
         # Stage 1: researcher draft with sentence-level citations (do not log draft)
-        draft = self._researcher.research(query, config=config or {}, log=False)
+        draft = self._researcher.research(enhanced_query, config=config or {}, log=False)
         # Stage 2: fact-check for uncorroborated / biased / weak sources
         feedback = fact_check(
             draft=draft,
