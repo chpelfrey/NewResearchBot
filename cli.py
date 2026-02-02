@@ -105,7 +105,7 @@ def main():
                 if query.lower() in ("quit", "exit", "q"):
                     break
                 if use_pipeline:
-                    print("\nClarifying, researching, fact-checking, formatting...\n")
+                    print("\nClarifying, then researching, fact-checking, formatting...\n")
                 else:
                     print("\nResearching...\n")
                 if args.stream:
@@ -129,14 +129,17 @@ def main():
                             pass
                 else:
                     clarification_list = [] if (use_pipeline and args.show_clarification) else None
+                    # Always show plan before research when using pipeline
+                    def on_plan(plan: str) -> None:
+                        if plan.strip():
+                            print("Research plan:\n")
+                            print(plan)
+                            print()
                     answer = agent.research(
                         query,
                         clarification_out=clarification_list,
+                        on_plan_ready=on_plan if use_pipeline else None,
                     )
-                    if clarification_list and clarification_list[0].strip():
-                        print("Clarification (scope + plan):\n")
-                        print(clarification_list[0])
-                        print()
                     print("Answer:\n")
                     print(make_links_clickable(answer))
                 print("-" * 50)
@@ -183,13 +186,18 @@ def main():
                     pass
         else:
             if use_pipeline:
-                print("Clarifying, researching, fact-checking, formatting...")
+                print("Clarifying, then researching, fact-checking, formatting...")
             clarification_list = [] if (use_pipeline and args.show_clarification) else None
-            answer = agent.research(query, clarification_out=clarification_list)
-            if clarification_list and clarification_list[0].strip():
-                print("\nClarification (scope + plan):\n")
-                print(clarification_list[0])
-                print()
+            def on_plan(plan: str) -> None:
+                if plan.strip():
+                    print("\nResearch plan:\n")
+                    print(plan)
+                    print()
+            answer = agent.research(
+                query,
+                clarification_out=clarification_list,
+                on_plan_ready=on_plan if use_pipeline else None,
+            )
             print(make_links_clickable(answer))
     except ImportError as e:
         print("Error: Could not import research_bot. Install dependencies:", file=sys.stderr)

@@ -1,8 +1,9 @@
 """Researcher agent - LangGraph + Ollama with DuckDuckGo search."""
 
 import time
+from collections.abc import Callable
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_ollama import ChatOllama
 from langgraph.prebuilt import create_react_agent
@@ -213,6 +214,21 @@ def _llm(model: str, temperature: float, base_url: str | None):
     return ChatOllama(model=model, temperature=temperature, base_url=base_url)
 
 
+def _tools_used_from_messages(messages: list) -> list[str]:
+    """Extract tool names called during the run, in order (with duplicates preserved)."""
+    names: list[str] = []
+    for msg in messages:
+        if isinstance(msg, AIMessage) and getattr(msg, "tool_calls", None):
+            for tc in msg.tool_calls:
+                if isinstance(tc, dict) and "name" in tc:
+                    names.append(tc["name"])
+                elif hasattr(tc, "name"):
+                    names.append(tc.name)
+        if isinstance(msg, ToolMessage):
+            names.append(getattr(msg, "name", ""))
+    return names
+
+
 def fact_check(
     draft: str,
     query: str,
@@ -275,8 +291,11 @@ class ResearchAgent:
         config: RunnableConfig | None = None,
         *,
         log: bool = True,
+        tools_used_out: list[str] | None = None,
     ) -> str:
-        """Run a research query and return the final answer. Logs Q&A to the research log unless log=False."""
+        """Run a research query and return the final answer. Logs Q&A to the research log unless log=False.
+        If tools_used_out is provided, appends the list of tool names called during the run (in order).
+        """
         start = time.perf_counter()
         result = self.graph.invoke(
             {"messages": [HumanMessage(content=query)]},
@@ -284,6 +303,8 @@ class ResearchAgent:
         )
         elapsed = time.perf_counter() - start
         messages = result.get("messages", [])
+        if tools_used_out is not None:
+            tools_used_out.extend(_tools_used_from_messages(messages))
         answer = None
         for msg in reversed(messages):
             if isinstance(msg, AIMessage) and msg.content:
@@ -327,10 +348,14 @@ class ResearchPipeline:
         config: RunnableConfig | None = None,
         *,
         clarification_out: list[str] | None = None,
+        on_plan_ready: Callable[[str], None] | None = None,
     ) -> str:
         """Run clarifier → researcher → fact-checker → formatter and return the final report. Logs to research log.
 
         If clarification_out is provided (e.g. a list), the clarifier's output is appended so the caller can display it.
+        If on_plan_ready is provided, it is called with the clarification (scope + suggested research plan) before
+        the research phase runs, so the caller can show the plan to the user first.
+        The final report includes a "Tools used" section listing the tools called during research.
         """
         start = time.perf_counter()
         # Stage 0: clarifier confirms scope and suggests research plan
@@ -342,6 +367,8 @@ class ResearchPipeline:
         )
         if clarification_out is not None:
             clarification_out.append(clarification)
+        if on_plan_ready is not None:
+            on_plan_ready(clarification)
         enhanced_query = (
             f"Original question: {query}\n\n{clarification}\n\n"
             "Follow the suggested research plan above and answer the original question fully with cited sources."
@@ -349,7 +376,10 @@ class ResearchPipeline:
         if not clarification.strip():
             enhanced_query = query  # fallback if clarifier returns nothing
         # Stage 1: researcher draft with sentence-level citations (do not log draft)
-        draft = self._researcher.research(enhanced_query, config=config or {}, log=False)
+        tools_used: list[str] = []
+        draft = self._researcher.research(
+            enhanced_query, config=config or {}, log=False, tools_used_out=tools_used
+        )
         # Stage 2: fact-check for uncorroborated / biased / weak sources
         feedback = fact_check(
             draft=draft,
@@ -367,6 +397,11 @@ class ResearchPipeline:
             temperature=self.temperature,
             base_url=self.base_url,
         )
+        # Append tools used in this run (order preserved, unique)
+        seen: set[str] = set()
+        unique_tools = [t for t in tools_used if t and t not in seen and not seen.add(t)]
+        if unique_tools:
+            report += "\n\n## Tools used\n" + ", ".join(unique_tools)
         elapsed = time.perf_counter() - start
         try:
             append_entry(query=query, response=report, response_time_seconds=elapsed)

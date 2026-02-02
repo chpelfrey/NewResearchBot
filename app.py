@@ -83,9 +83,15 @@ def main():
 
         with st.chat_message("assistant"):
             try:
+                agent = get_agent()
+                # Show plan before research runs
+                def show_plan(plan: str) -> None:
+                    if plan.strip():
+                        st.markdown("**Research plan**")
+                        st.markdown(plan)
+                        st.divider()
                 with st.spinner("Researching, fact-checking, and formatting…"):
-                    agent = get_agent()
-                    answer = agent.research(prompt)
+                    answer = agent.research(prompt, on_plan_ready=show_plan)
             except Exception as e:
                 answer = f"Something went wrong: {e}"
             st.markdown(answer)
