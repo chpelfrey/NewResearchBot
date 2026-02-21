@@ -1,11 +1,11 @@
-"""Researcher agent - LangGraph + Ollama with DuckDuckGo search."""
+"""Researcher agent - LangGraph + Claude (Anthropic) with DuckDuckGo search."""
 
 import time
 from collections.abc import Callable
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_ollama import ChatOllama
+from langchain_anthropic import ChatAnthropic
 from langgraph.prebuilt import create_react_agent
 
 from research_bot.research_log import append_entry
@@ -37,8 +37,7 @@ from research_bot.tools import (
     search_youtube,
 )
 
-# Default model - use a model with good tool-calling support (llama3.2, mistral, etc.)
-DEFAULT_MODEL = "llama3.2"
+DEFAULT_MODEL = "claude-opus-4-6"
 
 RESEARCHER_SYSTEM_PROMPT = """You are a research assistant that finds accurate information from the internet. Your output MUST have sentence-level citations for every factual claim.
 
@@ -80,23 +79,20 @@ Rule: Do not say you couldn't find someone or something until you have called se
 def create_research_agent(
     model: str = DEFAULT_MODEL,
     temperature: float = 0.2,
-    base_url: str | None = None,
 ):
     """
     Create and return a compiled research agent graph.
-    
+
     Args:
-        model: Ollama model name (e.g., llama3.2, mistral, llama3.1)
+        model: Claude model name (e.g., claude-opus-4-6, claude-sonnet-4-6)
         temperature: Sampling temperature (lower = more deterministic)
-        base_url: Optional Ollama API base URL (for remote Ollama)
-    
+
     Returns:
         The compiled graph - use .invoke() or .stream() to run
     """
-    llm = ChatOllama(
+    llm = ChatAnthropic(
         model=model,
         temperature=temperature,
-        base_url=base_url,
     )
     
     tools = [
@@ -167,10 +163,9 @@ def clarify(
     query: str,
     model: str = DEFAULT_MODEL,
     temperature: float = 0.2,
-    base_url: str | None = None,
 ) -> str:
     """Run the clarifier on the user query. Returns confirmation + suggested research plan."""
-    llm = _llm(model, temperature, base_url)
+    llm = _llm(model, temperature)
     prompt = f"""User's research question:\n\n{query}\n\nClarify what you're researching and give a suggested research plan (What I'm researching + Suggested research plan)."""
     msg = llm.invoke([SystemMessage(content=CLARIFIER_SYSTEM), HumanMessage(content=prompt)])
     return msg.content if hasattr(msg, "content") and msg.content else ""
@@ -209,9 +204,9 @@ Rules:
 
 
 
-def _llm(model: str, temperature: float, base_url: str | None):
+def _llm(model: str, temperature: float):
     """Shared LLM for fact-checker and formatter."""
-    return ChatOllama(model=model, temperature=temperature, base_url=base_url)
+    return ChatAnthropic(model=model, temperature=temperature)
 
 
 def _tools_used_from_messages(messages: list) -> list[str]:
@@ -234,10 +229,9 @@ def fact_check(
     query: str,
     model: str = DEFAULT_MODEL,
     temperature: float = 0.2,
-    base_url: str | None = None,
 ) -> str:
     """Run the fact-checker on the researcher draft. Returns structured feedback."""
-    llm = _llm(model, temperature, base_url)
+    llm = _llm(model, temperature)
     prompt = f"""Original question: {query}
 
 Researcher draft:
@@ -255,10 +249,9 @@ def format_report(
     query: str,
     model: str = DEFAULT_MODEL,
     temperature: float = 0.2,
-    base_url: str | None = None,
 ) -> str:
     """Produce a clean, fully-cited report from the draft and fact-check feedback."""
-    llm = _llm(model, temperature, base_url)
+    llm = _llm(model, temperature)
     prompt = f"""Original question: {query}
 
 Researcher draft:
@@ -276,14 +269,13 @@ Produce the final report following the formatter rules. Output only the report."
 
 class ResearchAgent:
     """Convenience wrapper for the research agent."""
-    
+
     def __init__(
         self,
         model: str = DEFAULT_MODEL,
         temperature: float = 0.2,
-        base_url: str | None = None,
     ):
-        self.graph = create_research_agent(model=model, temperature=temperature, base_url=base_url)
+        self.graph = create_research_agent(model=model, temperature=temperature)
     
     def research(
         self,
@@ -335,12 +327,10 @@ class ResearchPipeline:
         self,
         model: str = DEFAULT_MODEL,
         temperature: float = 0.2,
-        base_url: str | None = None,
     ):
         self.model = model
         self.temperature = temperature
-        self.base_url = base_url
-        self._researcher = ResearchAgent(model=model, temperature=temperature, base_url=base_url)
+        self._researcher = ResearchAgent(model=model, temperature=temperature)
 
     def research(
         self,
@@ -363,7 +353,6 @@ class ResearchPipeline:
             query=query,
             model=self.model,
             temperature=self.temperature,
-            base_url=self.base_url,
         )
         if clarification_out is not None:
             clarification_out.append(clarification)
@@ -386,7 +375,6 @@ class ResearchPipeline:
             query=query,
             model=self.model,
             temperature=self.temperature,
-            base_url=self.base_url,
         )
         # Stage 3: formatter produces clean, fully-cited report
         report = format_report(
@@ -395,7 +383,6 @@ class ResearchPipeline:
             query=query,
             model=self.model,
             temperature=self.temperature,
-            base_url=self.base_url,
         )
         # Append tools used in this run (order preserved, unique)
         seen: set[str] = set()

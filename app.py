@@ -31,9 +31,8 @@ def get_agent():
         try:
             from research_bot import ResearchPipeline
             st.session_state.agent = ResearchPipeline(
-                model=st.session_state.get("model", os.environ.get("OLLAMA_MODEL", "llama3.2")),
+                model=st.session_state.get("model", os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-6")),
                 temperature=st.session_state.get("temperature", 0.2),
-                base_url=os.environ.get("OLLAMA_BASE_URL"),
             )
         except ImportError:
             st.error("Could not import research_bot. Install dependencies: `pip install -r requirements.txt`")
@@ -52,10 +51,11 @@ def main():
     # Sidebar (optional settings)
     with st.sidebar:
         st.subheader("Settings")
-        model = st.text_input(
-            "Ollama model",
-            value=os.environ.get("OLLAMA_MODEL", "llama3.2"),
-            help="Model must support tool calling (e.g. llama3.2, mistral)",
+        model = st.selectbox(
+            "Claude model",
+            options=["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"],
+            index=0,
+            help="claude-opus-4-6 is most capable; claude-haiku-4-5 is fastest and cheapest",
         )
         temperature = st.slider("Temperature", 0.0, 1.0, 0.2, 0.1)
         st.session_state["model"] = model

@@ -25,7 +25,7 @@ def make_links_clickable(text: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Researcher AI Bot - Agentic web research using DuckDuckGo and open-source LLMs"
+        description="Researcher AI Bot - Agentic web research powered by Claude"
     )
     parser.add_argument(
         "query",
@@ -35,8 +35,8 @@ def main():
     parser.add_argument(
         "-m",
         "--model",
-        default=os.environ.get("OLLAMA_MODEL", "llama3.2"),
-        help="Ollama model name (default: llama3.2 or OLLAMA_MODEL env)",
+        default=os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-6"),
+        help="Claude model name (default: claude-opus-4-6 or ANTHROPIC_MODEL env)",
     )
     parser.add_argument(
         "-t",
@@ -63,11 +63,6 @@ def main():
         action="store_true",
         help="Show clarifier output (scope + research plan) before the report (full pipeline only)",
     )
-    parser.add_argument(
-        "--base-url",
-        default=os.environ.get("OLLAMA_BASE_URL"),
-        help="Ollama API base URL (for remote Ollama)",
-    )
     args = parser.parse_args()
 
     query = " ".join(args.query) if args.query else None
@@ -86,13 +81,11 @@ def main():
                 ResearchPipeline(
                     model=args.model,
                     temperature=args.temperature,
-                    base_url=args.base_url,
                 )
                 if use_pipeline
                 else ResearchAgent(
                     model=args.model,
                     temperature=args.temperature,
-                    base_url=args.base_url,
                 )
             )
             while True:
@@ -157,13 +150,11 @@ def main():
             ResearchPipeline(
                 model=args.model,
                 temperature=args.temperature,
-                base_url=args.base_url,
             )
             if use_pipeline
             else ResearchAgent(
                 model=args.model,
                 temperature=args.temperature,
-                base_url=args.base_url,
             )
         )
         if args.stream:
